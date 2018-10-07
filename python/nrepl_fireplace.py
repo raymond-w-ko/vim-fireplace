@@ -2,11 +2,17 @@ import os
 import select
 import socket
 import sys
+import pprint
 
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
+
+def _debug(msg):
+    with open("fireplace.log", "a") as f:
+        f.write(msg)
+        f.write("\n")
 
 def noop():
     pass
@@ -83,6 +89,7 @@ class Connection:
             exit(0)
 
     def close(self):
+        _debug("socket close")
         return self.socket.close()
 
     def send(self, payload):
@@ -114,19 +121,31 @@ class Connection:
                 if response[key] != selectors[key]:
                     continue
             responses.append(response)
+            _debug("RESPONSE:")
+            _debug(pprint.pformat(response))
+            _debug("TERMINATORS:")
+            _debug(pprint.pformat(terminators))
+            _debug("****************************************")
             if 'status' in response and set(terminators) & set(response['status']):
                 return responses
 
 def dispatch(host, port, poll, keepalive, command, *args):
+    _debug("COMMANDS:")
+    _debug(command)
+    for arg in args:
+        _debug("    " + str(arg))
     conn = Connection(host, port, poll, keepalive)
     try:
         return getattr(conn, command)(*args)
+    except:
+        _debug(traceback.format_exc())
     finally:
         conn.close()
 
 def main(host, port, keepalive, command, *args):
     try:
-        sys.stdout.write(vim_encode(dispatch(host, port, noop, keepalive, command, *[bdecode(StringIO(arg)) for arg in args])))
+        ret = vim_encode(dispatch(host, port, noop, keepalive, command, *[bdecode(StringIO(arg)) for arg in args]))
+        sys.stdout.write(ret)
     except Exception:
         print((sys.exc_info()[1]))
         exit(1)

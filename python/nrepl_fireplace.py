@@ -10,7 +10,7 @@ except ImportError:
     from io import StringIO
 
 def _debug(msg):
-    with open("fireplace.log", "a") as f:
+    with open("/home/rko/fireplace.log", "a") as f:
         f.write(msg)
         f.write("\n")
 
